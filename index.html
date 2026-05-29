@@ -4,8 +4,6 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <title>WebAR Mô Hình Khủng Long - AR.js</title>
-    
-    <!-- Nhúng thư viện đồ họa 3D và thư viện AR -->
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   </head>
@@ -14,14 +12,11 @@
     <a-scene embedded vr-mode-ui="enabled: false" arjs="sourceType: webcam; debugUIEnabled: false;">
       
       <a-assets>
-        <!-- Nạp file mô hình khủng long (.gltf hoặc .glb) vào bộ nhớ -->
         <a-asset-item id="dino-model" src="./assets/dinosaur.glb"></a-asset-item>
       </a-assets>
       
-      <!-- Định vị dựa trên Marker mã Hiro mặc định -->
       <a-marker preset="hiro">
         
-        <!-- Thẻ hiển thị mô hình định dạng GLTF/GLB -->
         <a-gltf-model 
           src="#dino-model" 
           position="0 0 0" 
@@ -31,7 +26,6 @@
 
       </a-marker>
       
-      <!-- Camera của thiết bị -->
       <a-entity camera></a-entity>
       
     </a-scene>
