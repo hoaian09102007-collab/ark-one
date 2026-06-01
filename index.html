@@ -3,50 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trình phát Video 360°</title>
+    <title>Ứng dụng Xem Video 360° Cảm Biến</title>
+    
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    
     <style>
-        /* Giao diện nút bấm bắt đầu/xin quyền cảm biến trên di động */
+        /* Giao diện màn hình chờ (Overlay) bắt buộc tương tác */
         #overlay {
-            position: absolute;
+            position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 9999;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            z-index: 99999;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             color: white;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
         }
+        h1 { margin-bottom: 10px; font-size: 24px; }
+        p { margin-bottom: 30px; color: #e0e0e0; max-width: 400px; line-height: 1.5; }
         #start-btn {
-            padding: 15px 30px;
+            padding: 15px 40px;
             font-size: 18px;
-            background-color: #007bff;
-            color: white;
+            font-weight: bold;
+            background-color: #00ecbc;
+            color: #1e3c72;
             border: none;
-            border-radius: 5px;
+            border-radius: 30px;
             cursor: pointer;
-            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0,236,188,0.4);
+            transition: transform 0.2s, background-color 0.2s;
         }
-        #start-btn:hover {
-            background-color: #0056b3;
+        #start-btn:active {
+            transform: scale(0.95);
+        }
+        /* Thông báo trạng thái tải */
+        #loading-status {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #ffeb3b;
         }
     </style>
 </head>
 <body>
 
     <div id="overlay">
-        <h2>Trình phát Video 360° Cảm Biến</h2>
-        <p>Bấm vào nút dưới đây để kích hoạt video và cảm biến chuyển động.</p>
-        <button id="start-btn">XEM VIDEO</button>
+        <h1>TRÌNH PHÁT VIDEO 360°</h1>
+        <p>Vui lòng bấm nút bên dưới để cấp quyền cho Cảm biến xoay góc nhìn và phát Video.</p>
+        <button id="start-btn">BẮT ĐẦU XEM</button>
+        <div id="loading-status"></div>
     </div>
 
-    <a-scene>
+    <a-scene loading-screen="enabled: false">
         <a-assets>
             <video id="video360" 
-                   src="path/to/your/video360.mp4" 
-                   autoplay="false" 
+                   src="https://bitmovin-a.akamaihd.net/content/playhouse-vr/mp4/video_1080_4000k.mp4" 
+                   preload="auto"
                    loop="true" 
                    crossorigin="anonymous" 
                    playsinline 
@@ -62,32 +78,48 @@
     <script>
         const overlay = document.getElementById('overlay');
         const startBtn = document.getElementById('start-btn');
+        const statusText = document.getElementById('loading-status');
         const video = document.getElementById('video360');
 
+        // Khi người dùng bấm nút Bắt đầu
         startBtn.addEventListener('click', function () {
-            // Ẩn lớp phủ giao diện
-            overlay.style.display = 'none';
+            statusText.innerText = "Đang khởi tạo cảm biến và video...";
 
-            // Kích hoạt phát video (Trình duyệt chặn tự động phát nếu chưa tương tác)
-            video.play().catch(function(error) {
-                console.log("Không thể tự động phát video: ", error);
-            });
-
-            // Yêu cầu quyền truy cập cảm biến đối với thiết bị iOS (iOS 13+)
+            // 1. Xử lý yêu cầu quyền cảm biến trục tọa độ trên iOS (Safari 13+)
             if (typeof DeviceOrientationEvent !== 'undefined' && 
                 typeof DeviceOrientationEvent.requestPermission === 'function') {
                 
                 DeviceOrientationEvent.requestPermission()
                     .then(permissionState => {
                         if (permissionState === 'granted') {
-                            console.log("Đã cấp quyền cảm biến di động.");
+                            HienThiVideo();
                         } else {
-                            alert("Bạn cần cấp quyền cảm biến để xoay góc nhìn video!");
+                            alert("Bạn đã từ chối quyền cảm biến. Ứng dụng sẽ không thể xoay góc nhìn khi di chuyển điện thoại!");
+                            HienThiVideo(); // Vẫn cho phát video nhưng không có cảm biến
                         }
                     })
-                    .catch(console.error);
+                    .catch(error => {
+                        console.error("Lỗi xin quyền cảm biến: ", error);
+                        HienThiVideo();
+                    });
+            } else {
+                // Đối với Android hoặc PC (Không cần xin quyền qua hàm requestPermission)
+                HienThiVideo();
             }
         });
+
+        // Hàm ẩn màn hình chờ và kích hoạt phát video
+        function HienThiVideo() {
+            overlay.style.display = 'none'; // Ẩn màn hình chờ
+
+            // Phát video bằng lệnh Javascript (vượt qua tính năng chặn tự động phát)
+            video.play().then(() => {
+                console.log("Video đang phát thành công!");
+            }).catch(error => {
+                console.error("Không thể phát video: ", error);
+                alert("Lỗi phát video! Vui lòng kiểm tra lại kết nối mạng hoặc định dạng video.");
+            });
+        }
     </script>
 </body>
 </html>
