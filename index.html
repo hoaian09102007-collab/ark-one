@@ -1,35 +1,93 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>WebAR Mô Hình Chim - AR.js</title>
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-  </head>
-  <body style="margin: 0px; overflow: hidden;">
-    
-    <a-scene embedded vr-mode-ui="enabled: false" arjs="sourceType: webcam; debugUIEnabled: false;">
-      
-      <a-assets>
-        <a-asset-item id="bird-obj" src="./assets/wps_wid.cid-478070967.1762434006.obj"></a-asset-item>
-        <a-asset-item id="bird-mtl" src="./assets/wps_wid.cid-478070967.1762434006.mtl"></a-asset-item>
-      </a-assets>
-      
-      <a-marker preset="hiro">
-        
-        <a-obj-model 
-          src="#bird-obj" 
-          mtl="#bird-mtl" 
-          position="0 0 0" 
-          scale="0.05 0.05 0.05" 
-          rotation="-90 0 0">
-        </a-obj-model>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trình phát Video 360°</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <style>
+        /* Giao diện nút bấm bắt đầu/xin quyền cảm biến trên di động */
+        #overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #start-btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        #start-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
 
-      </a-marker>
-      
-      <a-entity camera></a-entity>
-      
+    <div id="overlay">
+        <h2>Trình phát Video 360° Cảm Biến</h2>
+        <p>Bấm vào nút dưới đây để kích hoạt video và cảm biến chuyển động.</p>
+        <button id="start-btn">XEM VIDEO</button>
+    </div>
+
+    <a-scene>
+        <a-assets>
+            <video id="video360" 
+                   src="path/to/your/video360.mp4" 
+                   autoplay="false" 
+                   loop="true" 
+                   crossorigin="anonymous" 
+                   playsinline 
+                   webkit-playsinline>
+            </video>
+        </a-assets>
+
+        <a-entity camera look-controls="magicWindowTrackingEnabled: true; touchEnabled: true"></a-entity>
+
+        <a-videosphere src="#video360" rotation="0 -90 0"></a-videosphere>
     </a-scene>
-  </body>
+
+    <script>
+        const overlay = document.getElementById('overlay');
+        const startBtn = document.getElementById('start-btn');
+        const video = document.getElementById('video360');
+
+        startBtn.addEventListener('click', function () {
+            // Ẩn lớp phủ giao diện
+            overlay.style.display = 'none';
+
+            // Kích hoạt phát video (Trình duyệt chặn tự động phát nếu chưa tương tác)
+            video.play().catch(function(error) {
+                console.log("Không thể tự động phát video: ", error);
+            });
+
+            // Yêu cầu quyền truy cập cảm biến đối với thiết bị iOS (iOS 13+)
+            if (typeof DeviceOrientationEvent !== 'undefined' && 
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                
+                DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            console.log("Đã cấp quyền cảm biến di động.");
+                        } else {
+                            alert("Bạn cần cấp quyền cảm biến để xoay góc nhìn video!");
+                        }
+                    })
+                    .catch(console.error);
+            }
+        });
+    </script>
+</body>
 </html>
