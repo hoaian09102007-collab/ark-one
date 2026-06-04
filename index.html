@@ -3,68 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ứng dụng Xem Video 360° Cảm Biến</title>
-    
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    
+    <title>App Xem Video 360 Độ</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <style>
-        /* Giao diện màn hình chờ (Overlay) bắt buộc tương tác */
-        #overlay {
+        /* Giao diện nút bấm yêu cầu quyền truy cập cảm biến */
+        #permission-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            z-index: 99999;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             color: white;
-            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-family: Arial, sans-serif;
             text-align: center;
             padding: 20px;
-            box-sizing: border-box;
         }
-        h1 { margin-bottom: 10px; font-size: 24px; }
-        p { margin-bottom: 30px; color: #e0e0e0; max-width: 400px; line-height: 1.5; }
-        #start-btn {
-            padding: 15px 40px;
-            font-size: 18px;
-            font-weight: bold;
-            background-color: #00ecbc;
-            color: #1e3c72;
+        .btn {
+            background-color: #007bff;
+            color: white;
             border: none;
-            border-radius: 30px;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 5px;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,236,188,0.4);
-            transition: transform 0.2s, background-color 0.2s;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
-        #start-btn:active {
-            transform: scale(0.95);
-        }
-        /* Thông báo trạng thái tải */
-        #loading-status {
-            margin-top: 15px;
-            font-size: 14px;
-            color: #ffeb3b;
-        }
+        .btn:hover { background-color: #0056b3; }
     </style>
 </head>
 <body>
 
-    <div id="overlay">
-        <h1>TRÌNH PHÁT VIDEO 360°</h1>
-        <p>Vui lòng bấm nút bên dưới để cấp quyền cho Cảm biến xoay góc nhìn và phát Video.</p>
-        <button id="start-btn">BẮT ĐẦU XEM</button>
-        <div id="loading-status"></div>
+    <div id="permission-overlay">
+        <h2>Trải Nghiệm Video 360°</h2>
+        <p>Ứng dụng cần quyền truy cập vào cảm biến chuyển động (Gyroscope) để xoay video theo điện thoại của bạn.</p>
+        <button class="btn" id="start-btn">Bắt đầu xem</button>
     </div>
 
     <a-scene loading-screen="enabled: false">
         <a-assets>
             <video id="video360" 
-                   src="wps_wid.cid-478070967.1762434006.exe" 
-                   preload="auto"
-                   loop="true" 
-                   crossorigin="anonymous" 
+                   src="cavoi.mp4" 
+                   autoplay 
+                   loop 
+                   muted 
                    playsinline 
                    webkit-playsinline>
             </video>
@@ -76,50 +61,31 @@
     </a-scene>
 
     <script>
-        const overlay = document.getElementById('overlay');
+        const overlay = document.getElementById('permission-overlay');
         const startBtn = document.getElementById('start-btn');
-        const statusText = document.getElementById('loading-status');
         const video = document.getElementById('video360');
 
-        // Khi người dùng bấm nút Bắt đầu
         startBtn.addEventListener('click', function () {
-            statusText.innerText = "Đang khởi tạo cảm biến và video...";
+            // Phát video ngay khi user tương tác (Tránh cơ chế chặn autoplay của trình duyệt)
+            video.play();
 
-            // 1. Xử lý yêu cầu quyền cảm biến trục tọa độ trên iOS (Safari 13+)
-            if (typeof DeviceOrientationEvent !== 'undefined' && 
-                typeof DeviceOrientationEvent.requestPermission === 'function') {
-                
+            // Kiểm tra và xin quyền truy cập cảm biến đối với thiết bị iOS (iPhone/iPad)
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission()
                     .then(permissionState => {
                         if (permissionState === 'granted') {
-                            HienThiVideo();
+                            overlay.style.display = 'none'; // Ẩn lớp phủ nếu được cấp quyền
                         } else {
-                            alert("Bạn đã từ chối quyền cảm biến. Ứng dụng sẽ không thể xoay góc nhìn khi di chuyển điện thoại!");
-                            HienThiVideo(); // Vẫn cho phát video nhưng không có cảm biến
+                            alert('Bạn đã từ chối cấp quyền cảm biến. Bạn chỉ có thể vuốt màn hình để xem.');
+                            overlay.style.display = 'none';
                         }
                     })
-                    .catch(error => {
-                        console.error("Lỗi xin quyền cảm biến: ", error);
-                        HienThiVideo();
-                    });
+                    .catch(console.error);
             } else {
-                // Đối với Android hoặc PC (Không cần xin quyền qua hàm requestPermission)
-                HienThiVideo();
+                // Đối với Android hoặc PC không cần xin quyền chủ động bằng code này
+                overlay.style.display = 'none';
             }
         });
-
-        // Hàm ẩn màn hình chờ và kích hoạt phát video
-        function HienThiVideo() {
-            overlay.style.display = 'none'; // Ẩn màn hình chờ
-
-            // Phát video bằng lệnh Javascript (vượt qua tính năng chặn tự động phát)
-            video.play().then(() => {
-                console.log("Video đang phát thành công!");
-            }).catch(error => {
-                console.error("Không thể phát video: ", error);
-                alert("Lỗi phát video! Vui lòng kiểm tra lại kết nối mạng hoặc định dạng video.");
-            });
-        }
     </script>
 </body>
 </html>
